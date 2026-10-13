@@ -1,4 +1,4 @@
-public abstract class BpostStandardShipping implements Shipping {
+public class BpostStandardShipping implements Shipping {
     public int cost(Parcel parcel) {
         if (parcel.getWeight() <= 2000) {
             return 5;
