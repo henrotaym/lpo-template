@@ -1,4 +1,4 @@
-# TP 09 : Des valeurs qui portent leurs règles
+# Le donjon complet
 
 ## Contexte
 
@@ -7,7 +7,18 @@ Elle y croise un Gobelin, un Squelette, un Fantôme, un Troll et un Dragon, et u
 coffre l'attend au fond. Certaines créatures volent, d'autres se régénèrent,
 d'autres laissent un butin, et certaines cumulent plusieurs de ces capacités. Un
 coffre n'est pas un personnage, mais il se frappe et se pille comme un monstre.
-Chaque butin a une rareté qui fait varier sa valeur.
+Aria emporte des potions et range ce qu'elle trouve dans ses sacs.
+
+## L'organisation du code
+
+- Le code est réparti en trois packages : `dungeon.character` (les personnages et
+  leurs capacités), `dungeon.combat` (attaques, éléments, protections, calcul des
+  dégâts et déroulement du combat) et `dungeon.loot` (butins, potions, sacs et
+  coffre).
+- Le programme se lance depuis une classe `Main` hors de ces packages, avec une
+  méthode `public static void main(String[] args)`.
+- `Main` crée Aria, les monstres et le coffre, puis confie l'exploration au
+  combat. Il ne contient aucune règle du jeu.
 
 ## Les éléments
 
@@ -26,10 +37,13 @@ Chaque butin a une rareté qui fait varier sa valeur.
 - Sans élément précisé, sont Physique.
 - Commencent avec tous leurs PV, ne descendent jamais sous 0 et ne dépassent jamais
   leur maximum.
-- Savent tous attaquer, toujours avec leur élément, mais aucun « personnage »
-  générique n'existe : chacun est d'une sorte précise.
+- Attaquent tous de la même façon : avec leur élément et toute leur attaque.
+- Ont chacun leur cri de guerre. Aucun « personnage » générique n'existe : chacun est
+  d'une sorte précise.
 - Ont une façon d'encaisser les coups, choisie à leur création.
+- Peuvent être soignés d'un nombre de PV, ou avec une potion.
 - Se classent entre eux selon leurs PV actuels.
+- Sont égaux quand ils portent le même nom.
 - S'affichent ainsi : `Gobelin [26/40 PV, ATK 7] ~ Physique`.
 
 ## Les personnages
@@ -43,8 +57,17 @@ Chaque butin a une rareté qui fait varier sa valeur.
 | Troll | 80 | 15 | 5 | Poison | normalement | non | 5 PV |
 | Dragon | 120 | 20 | 8 | Feu | normalement | oui, esquive 15 % | 8 PV |
 
-Un monstre d'une sorte donnée a toujours ces valeurs. Aria reçoit son élément à sa
-création.
+| Personnage | Cri de guerre |
+| - | - |
+| Aria | En avant ! |
+| Gobelin | Ma dague a soif ! |
+| Squelette | Clac clac clac. |
+| Fantôme | Hoooou... |
+| Troll | Troll écraser ! |
+| Dragon | Brûlez, misérables ! |
+
+Un monstre d'une sorte donnée a toujours ces valeurs. Aria reçoit son nom, ses
+valeurs et son élément à sa création.
 
 ## Les capacités
 
@@ -55,7 +78,7 @@ création.
 - **Se régénérer** : à la fin de chaque tour, s'il est debout et blessé, le
   personnage regagne ses PV de régénération, sans dépasser son maximum, et l'annonce.
 - **Laisser un butin** : quand on la vainc, la source donne son butin, qui est
-  ramassé et compté dans l'or récolté.
+  ramassé par Aria.
 - **Être frappé** : un personnage comme un coffre peut recevoir des dégâts et être
   détruit.
 - **Le Fantôme** : un coup sur deux le traverse sans effet, en commençant par le
@@ -66,7 +89,7 @@ création.
 - Une attaque est décrite par son élément, sa puissance et le fait qu'elle soit
   critique ou non.
 - Elle refuse d'exister sans élément ou avec une puissance négative.
-- Deux attaques aux mêmes valeurs sont interchangeables.
+- Deux attaques aux mêmes valeurs sont égales.
 
 ## Le calcul des dégâts
 
@@ -101,7 +124,7 @@ Il existe exactement quatre raretés :
 
 - A un nom, une valeur de base et une rareté.
 - Refuse d'exister sans nom, sans rareté ou avec une valeur de base négative.
-- Sa valeur réelle est sa valeur de base multipliée par sa rareté, arrondie à
+- Sa valeur en or est sa valeur de base multipliée par sa rareté, arrondie à
   l'entier le plus proche.
 - Deux butins aux mêmes nom, valeur de base et rareté sont égaux. Une rareté
   différente suffit à les distinguer.
@@ -118,6 +141,36 @@ Il existe exactement quatre raretés :
 Le Squelette et le Fantôme ne laissent rien. Exemple à respecter : une Couronne de
 valeur de base 100 et Épique vaut 250 po.
 
+## Les potions
+
+- Une potion a un nom, un nombre de PV soignés et une valeur en or.
+- Elle refuse d'exister sans nom, avec un soin nul ou négatif, ou une valeur
+  négative.
+- La potion de soin standard s'appelle « Potion de soin », soigne 40 PV et vaut
+  20 po. On l'obtient sans répéter ces valeurs.
+- S'affiche ainsi : `Potion de soin (+40 PV)`.
+
+## Les sacs
+
+- Un sac ne contient que des objets qui ont une valeur en or. Y ranger autre chose
+  est refusé à la compilation.
+- Un même sac sait contenir des butins ou des potions, sans être écrit deux fois.
+- Il refuse un objet absent.
+- Il connaît son nombre d'objets et leur valeur totale en or. Vide, il vaut 0.
+- On en retire les objets dans l'ordre où ils ont été rangés. Prendre dans un sac
+  vide est refusé.
+- Le contenu d'un sac ne se modifie que par le sac lui-même.
+
+## Aria
+
+- Elle porte un sac de butins et un sac de potions. Elle entre dans le donjon avec
+  deux potions de soin standard.
+- Elle range dans son sac de butins tout ce qu'elle ramasse.
+- Elle se souvient des monstres qu'elle a vaincus.
+- À la fin de chaque tour, si elle est debout, sous 30 % de ses PV maximum et qu'il
+  lui reste une potion, elle boit la première de son sac et l'annonce. La potion
+  bue quitte le sac. Une seule potion par tour.
+
 ## Le coffre
 
 - S'appelle « Coffre du donjon », a 30 de solidité et contient la Couronne ancienne.
@@ -129,26 +182,38 @@ valeur de base 100 et Épique vaut 250 po.
 
 ## Le combat
 
+- Aria annonce son entrée puis pousse son cri. Chaque monstre pousse le sien à son
+  apparition.
 - Les monstres se présentent dans l'ordre de leurs PV, du plus faible au plus
   robuste.
 - Aria affronte les monstres un par un, jusqu'à ce que l'un des deux tombe.
-- À chaque tour : Aria frappe, le monstre riposte s'il est debout, puis le tour se
-  termine.
+- Chaque tour se joue ainsi : Aria frappe, le monstre riposte s'il est debout, la
+  fin de tour du monstre puis celle d'Aria s'appliquent.
 - Chaque coup d'Aria affiche l'élément de l'attaque et le multiplicateur appliqué,
   puis l'état du monstre sur une ligne à part.
 - Les coups d'Aria sont critiques une fois sur cinq au hasard. Les ripostes ne le
   sont jamais. Le hasard est initialisé avec la graine 42 et un coup est critique
   quand le tirage entre 0 et 99 est inférieur à 20.
-- Aria compte elle-même ses victoires.
+- Un tour est un objet à part entière, qui n'existe qu'au sein d'un combat et
+  utilise directement son hasard et son calcul des dégâts.
 - L'exploration s'arrête quand le donjon est vide ou qu'Aria tombe, puis vient le
   coffre, puis le bilan.
+
+## Le bilan
+
+- Le nombre de monstres vaincus sur le nombre de monstres du donjon.
+- Les noms des monstres vaincus, par ordre alphabétique et non par PV.
+- L'or récolté : la valeur totale du sac de butins.
+- Le nombre de potions restantes et leur valeur totale.
 
 ## Sortie attendue
 
 ```
 Aria [220/220 PV, ATK 16] ~ Feu entre dans le donjon.
+Aria : « En avant ! »
 
 --- Gobelin [40/40 PV, ATK 7] ~ Physique apparaît ---
+Gobelin : « Ma dague a soif ! »
 Aria frappe Gobelin - Feu x1.0 - 14 dégâts
   Gobelin [26/40 PV, ATK 7] ~ Physique
   Gobelin riposte pour 3 dégâts. Aria [217/220 PV, ATK 16] ~ Feu
@@ -161,6 +226,7 @@ Gobelin est vaincu !
 Butin : Dague ébréchée (15 po) * Commun - Un objet banal.
 
 --- Fantôme [45/45 PV, ATK 10] ~ Glace apparaît ---
+Fantôme : « Hoooou... »
 Fantôme vole au-dessus du sol (esquive 30 %).
 Le coup traverse le Fantôme !
 Aria frappe Fantôme - Feu x1.5 - 23 dégâts
@@ -178,6 +244,7 @@ Aria frappe Fantôme - Feu x1.5 - 47 dégâts (critique !)
 Fantôme est vaincu !
 
 --- Squelette [55/55 PV, ATK 9] ~ Physique apparaît ---
+Squelette : « Clac clac clac. »
 Aria frappe Squelette - Feu x1.0 - 14 dégâts (critique !)
   Squelette [41/55 PV, ATK 9] ~ Physique
   Squelette riposte pour 5 dégâts. Aria [191/220 PV, ATK 16] ~ Feu
@@ -198,6 +265,7 @@ Aria frappe Squelette - Feu x1.0 - 6 dégâts
 Squelette est vaincu !
 
 --- Troll [80/80 PV, ATK 15] ~ Poison apparaît ---
+Troll : « Troll écraser ! »
 Aria frappe Troll - Feu x1.0 - 11 dégâts
   Troll [69/80 PV, ATK 15] ~ Poison
   Troll riposte pour 19 dégâts. Aria [152/220 PV, ATK 16] ~ Feu
@@ -222,9 +290,10 @@ Aria frappe Troll - Feu x1.0 - 11 dégâts
   Troll [39/80 PV, ATK 15] ~ Poison
   Troll riposte pour 19 dégâts. Aria [57/220 PV, ATK 16] ~ Feu
 Le Troll régénère 5 PV. Troll [44/80 PV, ATK 15] ~ Poison
+Aria boit Potion de soin (+40 PV). Aria [97/220 PV, ATK 16] ~ Feu
 Aria frappe Troll - Feu x1.0 - 27 dégâts (critique !)
   Troll [17/80 PV, ATK 15] ~ Poison
-  Troll riposte pour 19 dégâts. Aria [38/220 PV, ATK 16] ~ Feu
+  Troll riposte pour 19 dégâts. Aria [78/220 PV, ATK 16] ~ Feu
 Le Troll régénère 5 PV. Troll [22/80 PV, ATK 15] ~ Poison
 Aria frappe Troll - Feu x1.0 - 27 dégâts (critique !)
   Troll [0/80 PV, ATK 15] ~ Poison
@@ -232,28 +301,53 @@ Troll est vaincu !
 Butin : Massue de troll (120 po) ** Rare - Une belle trouvaille.
 
 --- Dragon [120/120 PV, ATK 20] ~ Feu apparaît ---
+Dragon : « Brûlez, misérables ! »
 Dragon vole au-dessus du sol (esquive 15 %).
 Aria frappe Dragon - Feu x1.0 - 8 dégâts
   Dragon [112/120 PV, ATK 20] ~ Feu
-  Dragon riposte pour 16 dégâts. Aria [22/220 PV, ATK 16] ~ Feu
+  Dragon riposte pour 16 dégâts. Aria [62/220 PV, ATK 16] ~ Feu
 Le Dragon régénère 8 PV. Dragon [120/120 PV, ATK 20] ~ Feu
+Aria boit Potion de soin (+40 PV). Aria [102/220 PV, ATK 16] ~ Feu
 Aria frappe Dragon - Feu x1.0 - 8 dégâts
   Dragon [112/120 PV, ATK 20] ~ Feu
-  Dragon riposte pour 16 dégâts. Aria [6/220 PV, ATK 16] ~ Feu
+  Dragon riposte pour 16 dégâts. Aria [86/220 PV, ATK 16] ~ Feu
 Le Dragon régénère 8 PV. Dragon [120/120 PV, ATK 20] ~ Feu
 Aria frappe Dragon - Feu x1.0 - 24 dégâts (critique !)
+  Dragon [96/120 PV, ATK 20] ~ Feu
+  Dragon riposte pour 16 dégâts. Aria [70/220 PV, ATK 16] ~ Feu
+Le Dragon régénère 8 PV. Dragon [104/120 PV, ATK 20] ~ Feu
+Aria frappe Dragon - Feu x1.0 - 8 dégâts
+  Dragon [96/120 PV, ATK 20] ~ Feu
+  Dragon riposte pour 16 dégâts. Aria [54/220 PV, ATK 16] ~ Feu
+Le Dragon régénère 8 PV. Dragon [104/120 PV, ATK 20] ~ Feu
+Aria frappe Dragon - Feu x1.0 - 8 dégâts
+  Dragon [96/120 PV, ATK 20] ~ Feu
+  Dragon riposte pour 16 dégâts. Aria [38/220 PV, ATK 16] ~ Feu
+Le Dragon régénère 8 PV. Dragon [104/120 PV, ATK 20] ~ Feu
+Aria frappe Dragon - Feu x1.0 - 8 dégâts
+  Dragon [96/120 PV, ATK 20] ~ Feu
+  Dragon riposte pour 16 dégâts. Aria [22/220 PV, ATK 16] ~ Feu
+Le Dragon régénère 8 PV. Dragon [104/120 PV, ATK 20] ~ Feu
+Aria frappe Dragon - Feu x1.0 - 8 dégâts
+  Dragon [96/120 PV, ATK 20] ~ Feu
+  Dragon riposte pour 16 dégâts. Aria [6/220 PV, ATK 16] ~ Feu
+Le Dragon régénère 8 PV. Dragon [104/120 PV, ATK 20] ~ Feu
+Aria frappe Dragon - Feu x1.0 - 8 dégâts
   Dragon [96/120 PV, ATK 20] ~ Feu
   Dragon riposte pour 16 dégâts. Aria [0/220 PV, ATK 16] ~ Feu
 Le Dragon régénère 8 PV. Dragon [104/120 PV, ATK 20] ~ Feu
 
 === Fin de l'exploration ===
 Monstres vaincus : 4 / 5
+Par ordre alphabétique : Fantôme, Gobelin, Squelette, Troll
 Or récolté : 135 po
+Potions restantes : 0 (0 po)
 ```
 
 ## Critères d'acceptation
 
 - La console affiche exactement la sortie attendue.
+- Le code respecte l'organisation en packages décrite plus haut.
 - Le calcul des dégâts ne connaît ni l'attaquant, ni aucune sorte de monstre
   précise.
 - Ajouter une nouvelle façon d'encaisser les coups ne demande de toucher ni au
@@ -263,12 +357,20 @@ Or récolté : 135 po
   ne demande pas de toucher aux autres sortes.
 - Le butin se ramasse de la même façon sur un monstre et sur un coffre.
 - Ajouter un élément ou une rareté ne demande de toucher qu'à la définition des
-  éléments ou des raretés : ni le calcul des dégâts, ni le butin, ni les personnages.
+  éléments ou des raretés.
 - Changer l'élément d'Aria ne demande pas de créer une nouvelle sorte de personnage.
-- Une attaque ou un butin invalide ne peut pas exister.
+- Une attaque, un butin, une potion ou un personnage invalide ne peut pas exister.
+- Un sac de chaînes de caractères ne compile pas.
+- Soigner d'un nombre de PV et soigner avec une potion s'écrivent de la même façon
+  du point de vue de l'appelant.
+- Aucune valeur partagée ne change au cours de la partie.
 - Une règle commune n'est écrite qu'une fois.
 
 ## Bonus
 
-Vérifier les exemples de calcul des dégâts et de butin par des tests unitaires,
-sans lancer de combat.
+Vérifier par des tests unitaires, sans lancer de combat :
+- les exemples de calcul des dégâts ;
+- la valeur et l'égalité des butins ;
+- la valeur totale d'un sac, l'ordre de retrait et le refus de prendre dans un sac
+  vide ;
+- les deux façons de soigner et la potion bue sous 30 % des PV.
