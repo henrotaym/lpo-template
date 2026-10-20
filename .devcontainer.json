@@ -4,14 +4,17 @@
         "dockerfile": "Dockerfile",
         "context": "."
     },
+    "remoteUser": "ubuntu",
     "customizations": {
         "vscode": {
             "extensions": [
                 "ms-azuretools.vscode-docker",
+                "redhat.java",
                 "vscjava.vscode-java-debug",
-                "redhat.java"
+                "vscjava.vscode-java-dependency",
+                "vscjava.vscode-java-test"
             ]
         }
     },
-    "postCreateCommand": "java -version && javac -version"
+    "postCreateCommand": "java -version && javac -version && git --version"
 }
