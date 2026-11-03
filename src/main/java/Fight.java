@@ -12,6 +12,13 @@ public class Fight {
                 int monsterDamage = damageCalculator.computeDamage(monster, hero);
                 hero.takeDamage(monsterDamage);
                 IO.println(monster.getName() + " riposte pour " + monsterDamage + " dégâts. " + hero);
+
+                int beforeEndOfTurnHealth = monster.getHealth();
+                monster.endOfTurn();
+                int regeneratedHealth = monster.getHealth() - beforeEndOfTurnHealth;
+                if (regeneratedHealth > 0) {
+                    IO.println(monster.getName() + " régénère " + regeneratedHealth + " PV. " + monster);
+                }
             } else {
                 IO.println(monster.getName() + " est vaincu !");
             }

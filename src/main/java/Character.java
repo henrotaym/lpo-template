@@ -1,12 +1,14 @@
-public abstract class Character {
+public abstract class Character implements Healable {
     private String name;
     private int health;
     private int maxHealth;
     private int attackPower;
     private int defense;
     private Protection protection;
+    private TurnEffect turnEffect;
 
-    public Character(String name, int maxHealth, int attackPower, int defense, Protection protection) {
+    public Character(String name, int maxHealth, int attackPower, int defense, Protection protection,
+            TurnEffect turnEffect) {
         if (name.isEmpty() || name == null) {
             throw new IllegalArgumentException("Name cannot be empty.");
         }
@@ -27,16 +29,33 @@ public abstract class Character {
             throw new IllegalArgumentException("Protection value cannot be null.");
         }
 
+        if (turnEffect == null) {
+            throw new IllegalArgumentException("Turn effect value cannot be null.");
+        }
+
         this.name = name;
         this.maxHealth = maxHealth;
         this.health = maxHealth;
         this.attackPower = attackPower;
         this.defense = defense;
         this.protection = protection;
+        this.turnEffect = turnEffect;
     }
 
     public boolean isAlive() {
         return this.health > 0;
+    }
+
+    public boolean isWounded() {
+        return this.health < this.maxHealth;
+    }
+
+    public void heal(int amount) {
+        if (amount == 0) {
+            return;
+        }
+
+        this.health = Math.min(this.maxHealth, this.health + amount);
     }
 
     public int getDefense() {
@@ -61,6 +80,18 @@ public abstract class Character {
 
     public String getName() {
         return this.name;
+    }
+
+    public int getHealth() {
+        return this.health;
+    }
+
+    public TurnEffect getTurnEffect() {
+        return this.turnEffect;
+    }
+
+    public void endOfTurn() {
+        this.turnEffect.apply(this);
     }
 
     public abstract String getBattleCry();

@@ -1,6 +1,6 @@
 public class Gobelin extends Character {
     public Gobelin() {
-        super("Gobelin", 40, 7, 2, new NoProtection());
+        super("Gobelin", 40, 7, 2, new NoProtection(), new NoTurnEffect());
     }
 
     @Override

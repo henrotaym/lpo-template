@@ -1,6 +1,6 @@
 public class Troll extends Character {
     public Troll() {
-        super("Troll", 80, 15, 5, new NoProtection());
+        super("Troll", 80, 15, 5, new NoProtection(), new Regeneration(5));
     }
 
     @Override
