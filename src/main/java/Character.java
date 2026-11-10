@@ -1,4 +1,4 @@
-public abstract class Character implements Healable {
+public abstract class Character implements Healable, Lootable {
     private String name;
     private int health;
     private int maxHealth;
@@ -6,9 +6,10 @@ public abstract class Character implements Healable {
     private int defense;
     private Protection protection;
     private TurnEffect turnEffect;
+    private Drop drop;
 
     public Character(String name, int maxHealth, int attackPower, int defense, Protection protection,
-            TurnEffect turnEffect) {
+            TurnEffect turnEffect, Drop drop) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Name cannot be empty.");
         }
@@ -33,6 +34,10 @@ public abstract class Character implements Healable {
             throw new IllegalArgumentException("Turn effect value cannot be null.");
         }
 
+        if (drop == null) {
+            throw new IllegalArgumentException("Drop value cannot be null.");
+        }
+
         this.name = name;
         this.maxHealth = maxHealth;
         this.health = maxHealth;
@@ -40,6 +45,7 @@ public abstract class Character implements Healable {
         this.defense = defense;
         this.protection = protection;
         this.turnEffect = turnEffect;
+        this.drop = drop;
     }
 
     public boolean isAlive() {
@@ -92,6 +98,14 @@ public abstract class Character implements Healable {
 
     public void endOfTurn() {
         this.turnEffect.apply(this);
+    }
+
+    public Drop getDrop() {
+        return this.drop;
+    }
+
+    public void changeProtection(Protection protection) {
+        this.protection = protection;
     }
 
     public abstract String getBattleCry();

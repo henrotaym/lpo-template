@@ -6,16 +6,22 @@ public class Main {
         Hero aria = new Hero();
         Fight fight = new Fight();
         DamageCalculator damageCalculator = new DamageCalculator();
+        Chest chest = new Chest("Coffre du donjon", 30, new LootDrop(new Loot("couronne ancienne", 250)));
 
         IO.println(aria + " entre dans le donjon.");
 
         for (Character monster : monsters) {
-            fight.fight(aria, monster, damageCalculator);
-
             if (!aria.isAlive()) {
                 IO.println("Aria est morte. " + aria);
                 break;
             }
+
+            fight.fight(aria, monster, damageCalculator);
         }
+
+        fight.open(aria, chest);
+
+        IO.println("=== Fin de l'exploration ===");
+        IO.println("Or récolté : " + aria.getGold() + " po");
     }
 }

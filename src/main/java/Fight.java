@@ -22,7 +22,17 @@ public class Fight {
                 }
             } else {
                 IO.println(monster.getName() + " est vaincu !");
+                monster.getDrop().giveTo(hero, monster);
             }
         }
+    }
+
+    public void open(Hero hero, Chest chest) {
+        IO.println("--- " + chest + " ---");
+        while (!chest.isOpen()) {
+            chest.takeDamage(hero.getAttackPower());
+            IO.println(hero.getName() + " frappe le coffre. " + chest);
+        }
+        chest.getDrop().giveTo(hero, chest);
     }
 }
