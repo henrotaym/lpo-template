@@ -14,10 +14,6 @@ public class Regeneration implements TurnEffect {
     }
 
     public void apply(Healable target) {
-        // if (target.isAlive() && target.isWounded()) {
-        // target.heal(this.amount);
-        // }
-
         if (!target.isAlive() || !target.isWounded()) {
             return;
         }

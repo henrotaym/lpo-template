@@ -1,6 +1,6 @@
 public class Skeleton extends Character {
     public Skeleton() {
-        super("Skeleton", 55, 9, 3, new HavingProtection(), new NoTurnEffect());
+        super("Squelette", 55, 9, 3, new HalvingProtection(), new NoTurnEffect());
     }
 
     @Override

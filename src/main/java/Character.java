@@ -9,7 +9,7 @@ public abstract class Character implements Healable {
 
     public Character(String name, int maxHealth, int attackPower, int defense, Protection protection,
             TurnEffect turnEffect) {
-        if (name.isEmpty() || name == null) {
+        if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Name cannot be empty.");
         }
 
@@ -17,11 +17,11 @@ public abstract class Character implements Healable {
             throw new IllegalArgumentException("MaxHealth value cannot be less than 0.");
         }
 
-        if (attackPower <= 0) {
+        if (attackPower < 0) {
             throw new IllegalArgumentException("AttackPower value cannot be less than 0.");
         }
 
-        if (defense <= 0) {
+        if (defense < 0) {
             throw new IllegalArgumentException("Defense value cannot be less than 0.");
         }
 
@@ -51,7 +51,7 @@ public abstract class Character implements Healable {
     }
 
     public void heal(int amount) {
-        if (amount == 0) {
+        if (amount <= 0) {
             return;
         }
 
@@ -63,7 +63,7 @@ public abstract class Character implements Healable {
     }
 
     public void takeDamage(int amount) {
-        if (amount == 0) {
+        if (amount <= 0) {
             return;
         }
 

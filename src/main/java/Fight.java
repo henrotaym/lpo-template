@@ -1,5 +1,6 @@
 public class Fight {
     public void fight(Hero hero, Character monster, DamageCalculator damageCalculator) {
+        IO.println("");
         IO.println("--- " + monster + " apparaît ---");
         IO.println(monster.getName() + " : " + monster.getBattleCry());
 

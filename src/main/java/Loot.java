@@ -3,11 +3,11 @@ public class Loot {
     private int goldValue;
 
     public Loot(String name, int goldValue) {
-        if (name.isEmpty() || name == null) {
+        if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Name cannot be empty.");
         }
 
-        if (goldValue <= 0) {
+        if (goldValue < 0) {
             throw new IllegalArgumentException("Gold value cannot be less than 0.");
         }
 
