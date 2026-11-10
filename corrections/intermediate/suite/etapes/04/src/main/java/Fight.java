@@ -15,7 +15,7 @@ public class Fight {
             if (monster.isAlive()) {
                 int monsterDamage = damageCalculator.computeDamage(monster, hero);
                 hero.takeDamage(monsterDamage);
-                this.log.monsterStruckBack(monster, hero, monsterDamage);
+                this.log.monsterRetaliated(monster, hero, monsterDamage);
 
                 int beforeEndOfTurnHealth = monster.getHealth();
                 monster.endOfTurn();
@@ -36,7 +36,7 @@ public class Fight {
 
         while (!chest.isOpen()) {
             chest.takeDamage(hero.getAttackPower());
-            this.log.heroHitChest(hero, chest);
+            this.log.chestStruck(hero, chest);
         }
 
         this.loot(hero, chest);

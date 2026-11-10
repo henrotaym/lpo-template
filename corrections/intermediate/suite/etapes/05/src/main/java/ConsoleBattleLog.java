@@ -13,7 +13,7 @@ public class ConsoleBattleLog implements BattleLog {
         IO.println(hero.getName() + " frappe " + monster.getName() + " pour " + damage + " dégâts. " + monster);
     }
 
-    public void monsterStruckBack(Character monster, Hero hero, int damage) {
+    public void monsterRetaliated(Character monster, Hero hero, int damage) {
         IO.println(monster.getName() + " riposte pour " + damage + " dégâts. " + hero);
     }
 
@@ -42,7 +42,7 @@ public class ConsoleBattleLog implements BattleLog {
         IO.println("--- " + chest + " ---");
     }
 
-    public void heroHitChest(Hero hero, Chest chest) {
+    public void chestStruck(Hero hero, Chest chest) {
         IO.println(hero.getName() + " frappe le coffre. " + chest);
     }
 

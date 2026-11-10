@@ -38,7 +38,7 @@ public interface BattleLog {
 
     void heroStruck(Hero hero, Character monster, int damage);
 
-    void monsterStruckBack(Character monster, Hero hero, int damage);
+    void monsterRetaliated(Character monster, Hero hero, int damage);
 
     void regenerated(Character character, int amount);
 
@@ -48,7 +48,7 @@ public interface BattleLog {
 
     void chestReached(Chest chest);
 
-    void heroHitChest(Hero hero, Chest chest);
+    void chestStruck(Hero hero, Chest chest);
 
     void explorationEnded(int victories, int monsterCount, int gold);
 }
@@ -72,7 +72,7 @@ public class ConsoleBattleLog implements BattleLog {
         IO.println(hero.getName() + " frappe " + monster.getName() + " pour " + damage + " dégâts. " + monster);
     }
 
-    public void monsterStruckBack(Character monster, Hero hero, int damage) {
+    public void monsterRetaliated(Character monster, Hero hero, int damage) {
         IO.println(monster.getName() + " riposte pour " + damage + " dégâts. " + hero);
     }
 
@@ -93,7 +93,7 @@ public class ConsoleBattleLog implements BattleLog {
         IO.println("--- " + chest + " ---");
     }
 
-    public void heroHitChest(Hero hero, Chest chest) {
+    public void chestStruck(Hero hero, Chest chest) {
         IO.println(hero.getName() + " frappe le coffre. " + chest);
     }
 
@@ -133,7 +133,7 @@ public class ConsoleBattleLog implements BattleLog {
                  int monsterDamage = damageCalculator.computeDamage(monster, hero);
                  hero.takeDamage(monsterDamage);
 -                IO.println(monster.getName() + " riposte pour " + monsterDamage + " dégâts. " + hero);
-+                this.log.monsterStruckBack(monster, hero, monsterDamage);
++                this.log.monsterRetaliated(monster, hero, monsterDamage);
  
                  int beforeEndOfTurnHealth = monster.getHealth();
 @@ -19,8 +22,8 @@
@@ -157,7 +157,7 @@ public class ConsoleBattleLog implements BattleLog {
          while (!chest.isOpen()) {
              chest.takeDamage(hero.getAttackPower());
 -            IO.println(hero.getName() + " frappe le coffre. " + chest);
-+            this.log.heroHitChest(hero, chest);
++            this.log.chestStruck(hero, chest);
          }
  
 ```

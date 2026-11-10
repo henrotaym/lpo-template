@@ -5,7 +5,7 @@ public interface BattleLog {
 
     void heroStruck(Hero hero, Character monster, int damage);
 
-    void monsterStruckBack(Character monster, Hero hero, int damage);
+    void monsterRetaliated(Character monster, Hero hero, int damage);
 
     void regenerated(Character character, int amount);
 
@@ -19,7 +19,7 @@ public interface BattleLog {
 
     void chestReached(Chest chest);
 
-    void heroHitChest(Hero hero, Chest chest);
+    void chestStruck(Hero hero, Chest chest);
 
     void explorationEnded(int victories, int monsterCount, int gold);
 }
