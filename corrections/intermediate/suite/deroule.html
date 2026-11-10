@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Déroulé du donjon</title>
+<style>
+:root { --bg:#fbfaf7; --fg:#1f1e1c; --muted:#6b6a65; --line:#e3e1da; --card:#f2f0ea; --code:#f4f2ec; --accent:#185fa5; --add:#e6f3dc; --addfg:#27500a; --del:#fcebeb; --delfg:#791f1f; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1c1b19; --fg:#ece9e1; --muted:#a3a19a; --line:#3a3935; --card:#262522; --code:#24231f; --accent:#85b7eb; --add:#1f3311; --addfg:#c0dd97; --del:#3a1717; --delfg:#f7c1c1; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif; }
+.layout { display:grid; grid-template-columns:260px minmax(0,1fr); max-width:1200px; margin:0 auto; }
+nav { position:sticky; top:0; height:100vh; overflow:auto; padding:24px 16px; border-right:1px solid var(--line); font-size:14px; }
+nav a { display:block; color:var(--fg); text-decoration:none; padding:4px 8px; border-radius:6px; }
+nav a:hover { background:var(--card); }
+.navlabel { margin:16px 0 4px; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+main { padding:24px 32px 80px; min-width:0; }
+section + section { margin-top:64px; padding-top:32px; border-top:3px solid var(--line); }
+.badge { display:inline-block; margin:0; padding:2px 10px; border-radius:999px; background:var(--card); color:var(--accent); font-size:13px; }
+h2.doc-title { font-size:26px; margin:8px 0 16px; }
+h3 { font-size:20px; margin:8px 0 12px; scroll-margin-top:16px; }
+hr { border:0; border-top:1px solid var(--line); margin:40px 0 24px; }
+code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9em; background:var(--code); padding:1px 5px; border-radius:4px; }
+pre { background:var(--code); border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow-x:auto; font-size:13px; line-height:1.5; }
+pre code { background:none; padding:0; font-size:inherit; }
+pre .add { display:block; background:var(--add); color:var(--addfg); }
+pre .del { display:block; background:var(--del); color:var(--delfg); }
+pre .hunk { display:block; color:var(--muted); }
+pre.out { border-left:3px solid var(--accent); }
+table { border-collapse:collapse; width:100%; margin:12px 0; font-size:14px; }
+th, td { border:1px solid var(--line); padding:6px 10px; text-align:left; vertical-align:top; }
+th { background:var(--card); }
+ul { padding-left:22px; }
+@media (max-width:800px) { .layout { grid-template-columns:1fr; } nav { position:static; height:auto; border-right:0; border-bottom:1px solid var(--line); } main { padding:16px; } }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav><div class="navgroup"><p class="navlabel">Maintenant</p><a href="#suite-0">Étape 0 : Remettre le code à niveau</a><a href="#suite-1">Étape 1 : Ce que laisse un vaincu</a><a href="#suite-2">Étape 2 : Le coffre</a><a href="#suite-3">Étape 3 : Le bilan</a></div><div class="navgroup"><p class="navlabel">Juste après</p><a href="#ensuite-0">Étape 4 : Tous les messages au même endroit : BattleLog</a><a href="#ensuite-1">Étape 5 : Annoncer le butin sans que le Drop parle : AnnouncedLooter</a></div></nav>
+<main><section id="suite"><p class="badge">Maintenant</p><h2 class="doc-title">Déroulé, suite : du code de la classe à la sortie complète</h2>
+<p>Point de départ : la branche <code>26-11-03</code> (régénération, Golem et combat contre la liste faits). Les fichiers nouveaux sont donnés en entier, les fichiers modifiés en <code>diff</code> (<code>+</code> à ajouter, <code>-</code> à retirer). Tout reste dans <code>src/main/java</code>, sans package, comme en classe.</p>
+<p>Chaque étape a été compilée et lancée en Java 25 ; les blocs « Sortie obtenue » sont la vraie sortie.</p>
+<pre class="bash"><code>javac -d out src/main/java/*.java &amp;&amp; java -cp out Main</code></pre>
+<table><thead><tr><th>Étape</th><th>Thème</th><th>Nouveaux fichiers</th></tr></thead><tbody><tr><td>0</td><td>Remettre le code à niveau</td><td><code>HalvingProtection</code></td></tr><tr><td>1</td><td>Ce que laisse un vaincu</td><td><code>Drop</code>, <code>LootDrop</code>, <code>Lootable</code>, <code>Looter</code>, <code>NoDrop</code>, <code>ShieldDrop</code></td></tr><tr><td>2</td><td>Le coffre</td><td><code>Chest</code></td></tr><tr><td>3</td><td>Le bilan</td><td></td></tr></tbody></table>
+<hr>
+<h3 id="suite-0">Étape 0 : Remettre le code à niveau</h3>
+<p><strong>Question à poser</strong> : Relisez l'énoncé ligne par ligne : qu'est-ce que notre programme affiche ou accepte de différent ?</p>
+<p><strong>Ce qu'il faut retenir</strong></p>
+<ul><li><code>null</code> testé avant <code>isEmpty</code> (sinon NullPointerException), et <code>isBlank</code> pour refuser « » ;</li><li>l'énoncé refuse les valeurs <strong>négatives</strong>, pas 0 : <code>&lt; 0</code> au lieu de <code>&lt;= 0</code> ;</li><li><code>takeDamage</code> et <code>heal</code> ignorent aussi les montants négatifs : <code>&lt;= 0</code> au lieu de <code>== 0</code> ;</li><li>le minimum de 1 s'applique <strong>avant</strong> la protection (« Les dégâts » de l'énoncé) ;</li><li>« Squelette » et « Grrrooonnnk. » comme dans l'énoncé, <code>HavingProtection</code> renommée <code>HalvingProtection</code> (« halving » = diviser par deux) ;</li><li>la ligne vide avant <code>--- ... apparaît ---</code>.</li></ul>
+<p><strong>Nouveau</strong> <code>HalvingProtection.java</code></p>
+<pre class="java"><code>public class HalvingProtection implements Protection {
+    public int reduce(int damage) {
+        return Math.max(1, damage / 2);
+    }
+}</code></pre>
+<p><strong>Modifié</strong> <code>ArmorProtection.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -3,5 +3,5 @@</span>
+ 
+     public ArmorProtection(int shield) {
+<span class="del">-        if (shield &lt;= 0) {</span>
+<span class="add">+        if (shield &lt; 0) {</span>
+             throw new IllegalArgumentException("Shield value cannot be less than 0.");
+         }</code></pre>
+<p><strong>Modifié</strong> <code>Character.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -10,5 +10,5 @@</span>
+     public Character(String name, int maxHealth, int attackPower, int defense, Protection protection,
+             TurnEffect turnEffect) {
+<span class="del">-        if (name.isEmpty() || name == null) {</span>
+<span class="add">+        if (name == null || name.isBlank()) {</span>
+             throw new IllegalArgumentException("Name cannot be empty.");
+         }
+<span class="hunk">@@ -18,9 +18,9 @@</span>
+         }
+ 
+<span class="del">-        if (attackPower &lt;= 0) {</span>
+<span class="add">+        if (attackPower &lt; 0) {</span>
+             throw new IllegalArgumentException("AttackPower value cannot be less than 0.");
+         }
+ 
+<span class="del">-        if (defense &lt;= 0) {</span>
+<span class="add">+        if (defense &lt; 0) {</span>
+             throw new IllegalArgumentException("Defense value cannot be less than 0.");
+         }
+<span class="hunk">@@ -52,5 +52,5 @@</span>
+ 
+     public void heal(int amount) {
+<span class="del">-        if (amount == 0) {</span>
+<span class="add">+        if (amount &lt;= 0) {</span>
+             return;
+         }
+<span class="hunk">@@ -64,5 +64,5 @@</span>
+ 
+     public void takeDamage(int amount) {
+<span class="del">-        if (amount == 0) {</span>
+<span class="add">+        if (amount &lt;= 0) {</span>
+             return;
+         }</code></pre>
+<p><strong>Modifié</strong> <code>DamageCalculator.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,5 +1,5 @@</span>
+ public class DamageCalculator {
+     public int computeDamage(Character attacker, Character defenser) {
+<span class="del">-        return Math.max(1, defenser.absorb(attacker.getAttackPower() - defenser.getDefense()));</span>
+<span class="add">+        return defenser.absorb(Math.max(1, attacker.getAttackPower() - defenser.getDefense()));</span>
+     }
+ }</code></pre>
+<p><strong>Modifié</strong> <code>Fight.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,4 +1,5 @@</span>
+ public class Fight {
+     public void fight(Hero hero, Character monster, DamageCalculator damageCalculator) {
+<span class="add">+        IO.println("");</span>
+         IO.println("--- " + monster + " apparaît ---");
+         IO.println(monster.getName() + " : " + monster.getBattleCry());</code></pre>
+<p><strong>Modifié</strong> <code>Golem.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,10 +1,10 @@</span>
+ public class Golem extends Character {
+     public Golem() {
+<span class="del">-        super("Golem", 70, 12, 4, new HavingProtection(), new Regeneration(3));</span>
+<span class="add">+        super("Golem", 70, 12, 4, new HalvingProtection(), new Regeneration(3));</span>
+     }
+ 
+     @Override
+     public String getBattleCry() {
+<span class="del">-        return "Grrrooonnnk";</span>
+<span class="add">+        return "Grrrooonnnk.";</span>
+     }
+ }</code></pre>
+<p><strong>Modifié</strong> <code>Loot.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -4,9 +4,9 @@</span>
+ 
+     public Loot(String name, int goldValue) {
+<span class="del">-        if (name.isEmpty() || name == null) {</span>
+<span class="add">+        if (name == null || name.isBlank()) {</span>
+             throw new IllegalArgumentException("Name cannot be empty.");
+         }
+ 
+<span class="del">-        if (goldValue &lt;= 0) {</span>
+<span class="add">+        if (goldValue &lt; 0) {</span>
+             throw new IllegalArgumentException("Gold value cannot be less than 0.");
+         }</code></pre>
+<p><strong>Modifié</strong> <code>Main.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -3,5 +3,4 @@</span>
+ public class Main {
+     public static void main(String[] args) {
+<span class="del">-        // Loot chest = new Loot("chest", 30);</span>
+         List&lt;Character&gt; monsters = List.of(new Gobelin(), new Skeleton(), new Troll(), new Golem());
+         Hero aria = new Hero();</code></pre>
+<p><strong>Modifié</strong> <code>Regeneration.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -15,8 +15,4 @@</span>
+ 
+     public void apply(Healable target) {
+<span class="del">-        // if (target.isAlive() &amp;&amp; target.isWounded()) {</span>
+<span class="del">-        // target.heal(this.amount);</span>
+<span class="del">-        // }</span>
+<span class="del">-</span>
+         if (!target.isAlive() || !target.isWounded()) {
+             return;</code></pre>
+<p><strong>Modifié</strong> <code>Skeleton.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,5 +1,5 @@</span>
+ public class Skeleton extends Character {
+     public Skeleton() {
+<span class="del">-        super("Skeleton", 55, 9, 3, new HavingProtection(), new NoTurnEffect());</span>
+<span class="add">+        super("Squelette", 55, 9, 3, new HalvingProtection(), new NoTurnEffect());</span>
+     }
+ </code></pre>
+<p><strong>Supprimé</strong> <code>HavingProtection.java</code> (renommé ci-dessus).</p>
+<p><strong>Sortie obtenue</strong></p>
+<pre class="out"><code>Aria [200/200 PV, ATK 20] entre dans le donjon.
+
+--- Gobelin [40/40 PV, ATK 7] apparaît ---
+Gobelin : Mon trésor, à moi !
+Aria frappe Gobelin pour 18 dégâts. Gobelin [22/40 PV, ATK 7]
+Gobelin riposte pour 3 dégâts. Aria [197/200 PV, ATK 20]
+...
+Gobelin est vaincu !
+Squelette est vaincu !
+Troll est vaincu !</code></pre>
+<p><strong>À nommer</strong> : Le programme suit l'énoncé à la lettre. Le Golem fait encore 8 dégâts : Aria n'a pas de bouclier.</p>
+<hr>
+<h3 id="suite-1">Étape 1 : Ce que laisse un vaincu</h3>
+<p><strong>Question à poser</strong> : Laisser écrire <code>if (monster instanceof Skeleton) ...</code> dans <code>Fight</code>. Puis : « Et si demain le Golem laisse aussi un bouclier ? » Relire la colonne « Laisse » : rien, un butin, un bouclier. Trois cas d'un même comportement, comme <code>Protection</code>.</p>
+<p><strong>Ce qu'il faut retenir</strong></p>
+<ul><li><code>Drop</code> est une interface, exactement comme <code>Protection</code> et <code>TurnEffect</code> : chaque monstre reçoit le sien dans <code>super(...)</code> ;</li><li>deux rôles, deux petites interfaces : <code>Looter</code> (celui qui ramasse : Aria) et <code>Lootable</code> (celui qui laisse : le monstre) ;</li><li>le <code>Drop</code> ne connaît ni <code>Hero</code> ni <code>Skeleton</code> : il reçoit « quelqu'un qui ramasse » et « quelqu'un qui laisse » ;</li><li><code>Fight</code> ne teste aucune sorte : une seule ligne <code>monster.getDrop().giveTo(hero, monster)</code>.</li></ul>
+<p><strong>Nouveau</strong> <code>Drop.java</code></p>
+<pre class="java"><code>public interface Drop {
+    void giveTo(Looter looter, Lootable source);
+}</code></pre>
+<p><strong>Nouveau</strong> <code>LootDrop.java</code></p>
+<pre class="java"><code>public class LootDrop implements Drop {
+    private Loot loot;
+
+    public LootDrop(Loot loot) {
+        if (loot == null) {
+            throw new IllegalArgumentException("Loot value cannot be null.");
+        }
+
+        this.loot = loot;
+    }
+
+    public void giveTo(Looter looter, Lootable source) {
+        looter.collect(this.loot);
+        IO.println("Butin : " + this.loot);
+    }
+}</code></pre>
+<p><strong>Nouveau</strong> <code>Lootable.java</code></p>
+<pre class="java"><code>public interface Lootable {
+    String getName();
+
+    Drop getDrop();
+}</code></pre>
+<p><strong>Nouveau</strong> <code>Looter.java</code></p>
+<pre class="java"><code>public interface Looter {
+    String getName();
+
+    void collect(Loot loot);
+
+    void equip(Protection shield);
+}</code></pre>
+<p><strong>Nouveau</strong> <code>NoDrop.java</code></p>
+<pre class="java"><code>public class NoDrop implements Drop {
+    public void giveTo(Looter looter, Lootable source) {
+    }
+}</code></pre>
+<p><strong>Nouveau</strong> <code>ShieldDrop.java</code></p>
+<pre class="java"><code>public class ShieldDrop implements Drop {
+    private Protection shield;
+
+    public ShieldDrop(Protection shield) {
+        if (shield == null) {
+            throw new IllegalArgumentException("Shield value cannot be null.");
+        }
+
+        this.shield = shield;
+    }
+
+    public void giveTo(Looter looter, Lootable source) {
+        looter.equip(this.shield);
+        IO.println(looter.getName() + " ramasse le bouclier de " + source.getName() + ".");
+    }
+}</code></pre>
+<p><strong>Modifié</strong> <code>Character.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,3 +1,3 @@</span>
+<span class="del">-public abstract class Character implements Healable {</span>
+<span class="add">+public abstract class Character implements Healable, Lootable {</span>
+     private String name;
+     private int health;
+<span class="hunk">@@ -7,7 +7,8 @@</span>
+     private Protection protection;
+     private TurnEffect turnEffect;
+<span class="add">+    private Drop drop;</span>
+ 
+     public Character(String name, int maxHealth, int attackPower, int defense, Protection protection,
+<span class="del">-            TurnEffect turnEffect) {</span>
+<span class="add">+            TurnEffect turnEffect, Drop drop) {</span>
+         if (name == null || name.isBlank()) {
+             throw new IllegalArgumentException("Name cannot be empty.");
+<span class="hunk">@@ -34,4 +35,8 @@</span>
+         }
+ 
+<span class="add">+        if (drop == null) {</span>
+<span class="add">+            throw new IllegalArgumentException("Drop value cannot be null.");</span>
+<span class="add">+        }</span>
+<span class="add">+</span>
+         this.name = name;
+         this.maxHealth = maxHealth;
+<span class="hunk">@@ -41,4 +46,5 @@</span>
+         this.protection = protection;
+         this.turnEffect = turnEffect;
+<span class="add">+        this.drop = drop;</span>
+     }
+ 
+<span class="hunk">@@ -75,8 +81,22 @@</span>
+     }
+ 
+<span class="add">+    public void changeProtection(Protection protection) {</span>
+<span class="add">+        if (protection == null) {</span>
+<span class="add">+            throw new IllegalArgumentException("Protection value cannot be null.");</span>
+<span class="add">+        }</span>
+<span class="add">+</span>
+<span class="add">+        this.protection = protection;</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    @Override</span>
+<span class="add">+    public Drop getDrop() {</span>
+<span class="add">+        return this.drop;</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+     public int getAttackPower() {
+         return this.attackPower;
+     }
+ 
+<span class="add">+    @Override</span>
+     public String getName() {
+         return this.name;</code></pre>
+<p><strong>Modifié</strong> <code>Fight.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -23,4 +23,5 @@</span>
+             } else {
+                 IO.println(monster.getName() + " est vaincu !");
+<span class="add">+                monster.getDrop().giveTo(hero, monster);</span>
+             }
+         }</code></pre>
+<p><strong>Modifié</strong> <code>Gobelin.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,5 +1,5 @@</span>
+ public class Gobelin extends Character {
+     public Gobelin() {
+<span class="del">-        super("Gobelin", 40, 7, 2, new NoProtection(), new NoTurnEffect());</span>
+<span class="add">+        super("Gobelin", 40, 7, 2, new NoProtection(), new NoTurnEffect(), new LootDrop(new Loot("Dague ébréchée", 15)));</span>
+     }
+ </code></pre>
+<p><strong>Modifié</strong> <code>Golem.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,5 +1,5 @@</span>
+ public class Golem extends Character {
+     public Golem() {
+<span class="del">-        super("Golem", 70, 12, 4, new HalvingProtection(), new Regeneration(3));</span>
+<span class="add">+        super("Golem", 70, 12, 4, new HalvingProtection(), new Regeneration(3), new NoDrop());</span>
+     }
+ </code></pre>
+<p><strong>Modifié</strong> <code>Hero.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,5 +1,7 @@</span>
+<span class="del">-public class Hero extends Character {</span>
+<span class="add">+public class Hero extends Character implements Looter {</span>
+<span class="add">+    private int gold;</span>
+<span class="add">+</span>
+     public Hero() {
+<span class="del">-        super("Aria", 200, 20, 4, new NoProtection(), new NoTurnEffect());</span>
+<span class="add">+        super("Aria", 200, 20, 4, new NoProtection(), new NoTurnEffect(), new NoDrop());</span>
+     }
+ 
+<span class="hunk">@@ -8,3 +10,17 @@</span>
+         return "Pour la lumière !";
+     }
+<span class="add">+</span>
+<span class="add">+    @Override</span>
+<span class="add">+    public void collect(Loot loot) {</span>
+<span class="add">+        this.gold += loot.getGoldValue();</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    @Override</span>
+<span class="add">+    public void equip(Protection shield) {</span>
+<span class="add">+        this.changeProtection(shield);</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    public int getGold() {</span>
+<span class="add">+        return this.gold;</span>
+<span class="add">+    }</span>
+ }</code></pre>
+<p><strong>Modifié</strong> <code>Main.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -18,4 +18,6 @@</span>
+             }
+         }
+<span class="add">+</span>
+<span class="add">+        IO.println("Or récolté : " + aria.getGold() + " po");</span>
+     }
+ }</code></pre>
+<p><strong>Modifié</strong> <code>Skeleton.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,5 +1,5 @@</span>
+ public class Skeleton extends Character {
+     public Skeleton() {
+<span class="del">-        super("Squelette", 55, 9, 3, new HalvingProtection(), new NoTurnEffect());</span>
+<span class="add">+        super("Squelette", 55, 9, 3, new HalvingProtection(), new NoTurnEffect(), new ShieldDrop(new ArmorProtection(2)));</span>
+     }
+ </code></pre>
+<p><strong>Modifié</strong> <code>Troll.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,5 +1,5 @@</span>
+ public class Troll extends Character {
+     public Troll() {
+<span class="del">-        super("Troll", 80, 15, 5, new NoProtection(), new Regeneration(5));</span>
+<span class="add">+        super("Troll", 80, 15, 5, new NoProtection(), new Regeneration(5), new LootDrop(new Loot("Massue de troll", 80)));</span>
+     }
+ </code></pre>
+<p><strong>Sortie obtenue</strong></p>
+<pre class="out"><code>Gobelin est vaincu !
+Butin : Dague ébréchée (15 po)
+Squelette est vaincu !
+Aria ramasse le bouclier de Squelette.
+Troll est vaincu !
+Butin : Massue de troll (80 po)
+Golem est vaincu !
+...
+Golem riposte pour 6 dégâts. Aria [95/200 PV, ATK 20]
+Golem riposte pour 6 dégâts. Aria [89/200 PV, ATK 20]
+...
+Or récolté : 95 po</code></pre>
+<p><strong>À nommer</strong> : Troisième comportement, polymorphisme à la place des <code>if</code>, petites interfaces : on dit au <code>Drop</code> de se donner, il sait lui-même s'il donne de l'or ou un bouclier.</p>
+<hr>
+<h3 id="suite-2">Étape 2 : Le coffre</h3>
+<p><strong>Question à poser</strong> : « Un coffre a-t-il un cri de guerre et une attaque ? » Non : pas d'héritage de <code>Character</code>. « Qu'a-t-il en commun avec un Gobelin ? » Il laisse quelque chose : il est <code>Lootable</code>.</p>
+<p><strong>Ce qu'il faut retenir</strong></p>
+<ul><li><code>Chest</code> n'hérite de rien, il implémente seulement <code>Lootable</code> ;</li><li>la ligne de pillage servirait deux fois : elle devient la méthode <code>loot(Looter, Lootable)</code> de <code>Fight</code>, utilisée pour le monstre et pour le coffre.</li></ul>
+<p><strong>Nouveau</strong> <code>Chest.java</code></p>
+<pre class="java"><code>public class Chest implements Lootable {
+    private String name;
+    private int durability;
+    private Drop drop;
+
+    public Chest(String name, int durability, Drop drop) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Name cannot be empty.");
+        }
+
+        if (durability &lt;= 0) {
+            throw new IllegalArgumentException("Durability value cannot be less than 1.");
+        }
+
+        if (drop == null) {
+            throw new IllegalArgumentException("Drop value cannot be null.");
+        }
+
+        this.name = name;
+        this.durability = durability;
+        this.drop = drop;
+    }
+
+    @Override
+    public String getName() {
+        return this.name;
+    }
+
+    @Override
+    public Drop getDrop() {
+        return this.drop;
+    }
+
+    public boolean isOpen() {
+        return this.durability == 0;
+    }
+
+    public void takeDamage(int amount) {
+        if (amount &lt;= 0) {
+            return;
+        }
+
+        this.durability = Math.max(0, this.durability - amount);
+    }
+
+    @Override
+    public String toString() {
+        return this.name + " [" + this.durability + " de solidité]";
+    }
+}</code></pre>
+<p><strong>Modifié</strong> <code>Fight.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -23,7 +23,23 @@</span>
+             } else {
+                 IO.println(monster.getName() + " est vaincu !");
+<span class="del">-                monster.getDrop().giveTo(hero, monster);</span>
+<span class="add">+                this.loot(hero, monster);</span>
+             }
+         }
+     }
+<span class="add">+</span>
+<span class="add">+    public void open(Hero hero, Chest chest) {</span>
+<span class="add">+        IO.println("");</span>
+<span class="add">+        IO.println("--- " + chest + " ---");</span>
+<span class="add">+</span>
+<span class="add">+        while (!chest.isOpen()) {</span>
+<span class="add">+            chest.takeDamage(hero.getAttackPower());</span>
+<span class="add">+            IO.println(hero.getName() + " frappe le coffre. " + chest);</span>
+<span class="add">+        }</span>
+<span class="add">+</span>
+<span class="add">+        this.loot(hero, chest);</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    private void loot(Looter looter, Lootable source) {</span>
+<span class="add">+        source.getDrop().giveTo(looter, source);</span>
+<span class="add">+    }</span>
+ }</code></pre>
+<p><strong>Modifié</strong> <code>Main.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -4,4 +4,5 @@</span>
+     public static void main(String[] args) {
+         List&lt;Character&gt; monsters = List.of(new Gobelin(), new Skeleton(), new Troll(), new Golem());
+<span class="add">+        Chest chest = new Chest("Coffre du donjon", 30, new LootDrop(new Loot("Couronne ancienne", 250)));</span>
+         Hero aria = new Hero();
+         Fight fight = new Fight();
+<span class="hunk">@@ -19,4 +20,8 @@</span>
+         }
+ 
+<span class="add">+        if (aria.isAlive()) {</span>
+<span class="add">+            fight.open(aria, chest);</span>
+<span class="add">+        }</span>
+<span class="add">+</span>
+         IO.println("Or récolté : " + aria.getGold() + " po");
+     }</code></pre>
+<p><strong>Sortie obtenue</strong></p>
+<pre class="out"><code>
+--- Coffre du donjon [30 de solidité] ---
+Aria frappe le coffre. Coffre du donjon [10 de solidité]
+Aria frappe le coffre. Coffre du donjon [0 de solidité]
+Butin : Couronne ancienne (250 po)
+Or récolté : 345 po</code></pre>
+<p><strong>À nommer</strong> : Une interface relie deux classes sans lien de parenté : c'est le critère « Le butin se ramasse de la même façon sur un monstre et sur un coffre ».</p>
+<hr>
+<h3 id="suite-3">Étape 3 : Le bilan</h3>
+<p><strong>Question à poser</strong> : Qui doit compter les victoires et l'or ? Celle qui les gagne : Aria.</p>
+<p><strong>Ce qu'il faut retenir</strong></p>
+<ul><li><code>Hero</code> compte ses victoires comme elle compte son or ;</li><li><code>Main</code> ne fait qu'afficher.</li></ul>
+<p><strong>Modifié</strong> <code>Fight.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -23,4 +23,5 @@</span>
+             } else {
+                 IO.println(monster.getName() + " est vaincu !");
+<span class="add">+                hero.recordVictory();</span>
+                 this.loot(hero, monster);
+             }</code></pre>
+<p><strong>Modifié</strong> <code>Hero.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,4 +1,5 @@</span>
+ public class Hero extends Character implements Looter {
+     private int gold;
+<span class="add">+    private int victories;</span>
+ 
+     public Hero() {
+<span class="hunk">@@ -24,3 +25,11 @@</span>
+         return this.gold;
+     }
+<span class="add">+</span>
+<span class="add">+    public void recordVictory() {</span>
+<span class="add">+        this.victories++;</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    public int getVictories() {</span>
+<span class="add">+        return this.victories;</span>
+<span class="add">+    }</span>
+ }</code></pre>
+<p><strong>Modifié</strong> <code>Main.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -24,4 +24,7 @@</span>
+         }
+ 
+<span class="add">+        IO.println("");</span>
+<span class="add">+        IO.println("=== Fin de l'exploration ===");</span>
+<span class="add">+        IO.println("Monstres vaincus : " + aria.getVictories() + " / " + monsters.size());</span>
+         IO.println("Or récolté : " + aria.getGold() + " po");
+     }</code></pre>
+<p><strong>Sortie obtenue</strong></p>
+<pre class="out"><code>--- Coffre du donjon [30 de solidité] ---
+Aria frappe le coffre. Coffre du donjon [10 de solidité]
+Aria frappe le coffre. Coffre du donjon [0 de solidité]
+Butin : Couronne ancienne (250 po)
+
+=== Fin de l'exploration ===
+Monstres vaincus : 4 / 4
+Or récolté : 345 po
+
+(sortie complète identique à l'énoncé, vérifiée par diff)</code></pre>
+<p><strong>À nommer</strong> : Encapsulation : l'état appartient à l'objet qui le fait évoluer.</p></section><section id="ensuite"><p class="badge">Juste après</p><h2 class="doc-title">Déroulé, ensuite : tous les messages au même endroit</h2>
+<p>À voir <strong>après</strong> <code>DEROULE-SUITE.md</code>. Point de départ : le code de la fin de ce déroulé (étape 3, sortie complète identique à l'énoncé).</p>
+<p>Rien ne change à l'écran : chaque étape réorganise le code et la sortie reste identique. C'est le moment de montrer qu'on peut améliorer la structure sans casser le comportement.</p>
+<p>Les fichiers nouveaux sont donnés en entier, les fichiers modifiés en <code>diff</code>. Chaque étape a été compilée, lancée et comparée à la sortie attendue en Java 25.</p>
+<table><thead><tr><th>Étape</th><th>Thème</th><th>Nouveaux fichiers</th></tr></thead><tbody><tr><td>4</td><td>Tous les messages au même endroit : BattleLog</td><td><code>BattleLog</code>, <code>ConsoleBattleLog</code></td></tr><tr><td>5</td><td>Annoncer le butin sans que le Drop parle : AnnouncedLooter</td><td><code>AnnouncedLooter</code></td></tr></tbody></table>
+<hr>
+<h3 id="ensuite-0">Étape 4 : Tous les messages au même endroit : BattleLog</h3>
+<p><strong>Question à poser</strong> : « Demain on affiche le combat dans une page web au lieu de la console. Combien de fichiers faut-il ouvrir ? » Aujourd'hui : <code>Fight</code>, <code>Main</code>, <code>LootDrop</code>, <code>ShieldDrop</code>.</p>
+<p><strong>Ce qu'il faut retenir</strong></p>
+<ul><li><code>BattleLog</code> liste tout ce qui peut arriver pendant l'exploration ;</li><li><code>ConsoleBattleLog</code> l'implémente avec des <code>IO.println</code> ;</li><li><code>Fight</code> reçoit le log dans son constructeur et lui raconte ce qui se passe, sans savoir que c'est une console ;</li><li><code>Main</code> passe aussi par le log ;</li><li>il reste deux <code>IO.println</code> hors du log : dans <code>LootDrop</code> et <code>ShieldDrop</code>. C'est l'étape suivante.</li></ul>
+<p><strong>Nouveau</strong> <code>BattleLog.java</code></p>
+<pre class="java"><code>public interface BattleLog {
+    void heroEntered(Hero hero);
+
+    void monsterAppeared(Character monster);
+
+    void heroStruck(Hero hero, Character monster, int damage);
+
+    void monsterStruckBack(Character monster, Hero hero, int damage);
+
+    void regenerated(Character character, int amount);
+
+    void monsterDefeated(Character monster);
+
+    void heroFell(Hero hero);
+
+    void chestReached(Chest chest);
+
+    void heroHitChest(Hero hero, Chest chest);
+
+    void explorationEnded(int victories, int monsterCount, int gold);
+}</code></pre>
+<p><strong>Nouveau</strong> <code>ConsoleBattleLog.java</code></p>
+<pre class="java"><code>public class ConsoleBattleLog implements BattleLog {
+    public void heroEntered(Hero hero) {
+        IO.println(hero + " entre dans le donjon.");
+    }
+
+    public void monsterAppeared(Character monster) {
+        IO.println("");
+        IO.println("--- " + monster + " apparaît ---");
+        IO.println(monster.getName() + " : " + monster.getBattleCry());
+    }
+
+    public void heroStruck(Hero hero, Character monster, int damage) {
+        IO.println(hero.getName() + " frappe " + monster.getName() + " pour " + damage + " dégâts. " + monster);
+    }
+
+    public void monsterStruckBack(Character monster, Hero hero, int damage) {
+        IO.println(monster.getName() + " riposte pour " + damage + " dégâts. " + hero);
+    }
+
+    public void regenerated(Character character, int amount) {
+        IO.println(character.getName() + " régénère " + amount + " PV. " + character);
+    }
+
+    public void monsterDefeated(Character monster) {
+        IO.println(monster.getName() + " est vaincu !");
+    }
+
+    public void heroFell(Hero hero) {
+        IO.println(hero.getName() + " est morte. " + hero);
+    }
+
+    public void chestReached(Chest chest) {
+        IO.println("");
+        IO.println("--- " + chest + " ---");
+    }
+
+    public void heroHitChest(Hero hero, Chest chest) {
+        IO.println(hero.getName() + " frappe le coffre. " + chest);
+    }
+
+    public void explorationEnded(int victories, int monsterCount, int gold) {
+        IO.println("");
+        IO.println("=== Fin de l'exploration ===");
+        IO.println("Monstres vaincus : " + victories + " / " + monsterCount);
+        IO.println("Or récolté : " + gold + " po");
+    }
+}</code></pre>
+<p><strong>Modifié</strong> <code>Fight.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,17 +1,20 @@</span>
+ public class Fight {
+<span class="add">+    private BattleLog log;</span>
+<span class="add">+</span>
+<span class="add">+    public Fight(BattleLog log) {</span>
+<span class="add">+        this.log = log;</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+     public void fight(Hero hero, Character monster, DamageCalculator damageCalculator) {
+<span class="del">-        IO.println("");</span>
+<span class="del">-        IO.println("--- " + monster + " apparaît ---");</span>
+<span class="del">-        IO.println(monster.getName() + " : " + monster.getBattleCry());</span>
+<span class="add">+        this.log.monsterAppeared(monster);</span>
+ 
+         while (hero.isAlive() &amp;&amp; monster.isAlive()) {
+             int heroDamage = damageCalculator.computeDamage(hero, monster);
+             monster.takeDamage(heroDamage);
+<span class="del">-            IO.println(hero.getName() + " frappe " + monster.getName() + " pour " + heroDamage + " dégâts. "</span>
+<span class="del">-                    + monster);</span>
+<span class="add">+            this.log.heroStruck(hero, monster, heroDamage);</span>
+             if (monster.isAlive()) {
+                 int monsterDamage = damageCalculator.computeDamage(monster, hero);
+                 hero.takeDamage(monsterDamage);
+<span class="del">-                IO.println(monster.getName() + " riposte pour " + monsterDamage + " dégâts. " + hero);</span>
+<span class="add">+                this.log.monsterStruckBack(monster, hero, monsterDamage);</span>
+ 
+                 int beforeEndOfTurnHealth = monster.getHealth();
+<span class="hunk">@@ -19,8 +22,8 @@</span>
+                 int regeneratedHealth = monster.getHealth() - beforeEndOfTurnHealth;
+                 if (regeneratedHealth &gt; 0) {
+<span class="del">-                    IO.println(monster.getName() + " régénère " + regeneratedHealth + " PV. " + monster);</span>
+<span class="add">+                    this.log.regenerated(monster, regeneratedHealth);</span>
+                 }
+             } else {
+<span class="del">-                IO.println(monster.getName() + " est vaincu !");</span>
+<span class="add">+                this.log.monsterDefeated(monster);</span>
+                 hero.recordVictory();
+                 this.loot(hero, monster);
+<span class="hunk">@@ -30,10 +33,9 @@</span>
+ 
+     public void open(Hero hero, Chest chest) {
+<span class="del">-        IO.println("");</span>
+<span class="del">-        IO.println("--- " + chest + " ---");</span>
+<span class="add">+        this.log.chestReached(chest);</span>
+ 
+         while (!chest.isOpen()) {
+             chest.takeDamage(hero.getAttackPower());
+<span class="del">-            IO.println(hero.getName() + " frappe le coffre. " + chest);</span>
+<span class="add">+            this.log.heroHitChest(hero, chest);</span>
+         }
+ </code></pre>
+<p><strong>Modifié</strong> <code>Main.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -6,8 +6,9 @@</span>
+         Chest chest = new Chest("Coffre du donjon", 30, new LootDrop(new Loot("Couronne ancienne", 250)));
+         Hero aria = new Hero();
+<span class="del">-        Fight fight = new Fight();</span>
+<span class="add">+        BattleLog log = new ConsoleBattleLog();</span>
+<span class="add">+        Fight fight = new Fight(log);</span>
+         DamageCalculator damageCalculator = new DamageCalculator();
+ 
+<span class="del">-        IO.println(aria + " entre dans le donjon.");</span>
+<span class="add">+        log.heroEntered(aria);</span>
+ 
+         for (Character monster : monsters) {
+<span class="hunk">@@ -15,5 +16,5 @@</span>
+ 
+             if (!aria.isAlive()) {
+<span class="del">-                IO.println("Aria est morte. " + aria);</span>
+<span class="add">+                log.heroFell(aria);</span>
+                 break;
+             }
+<span class="hunk">@@ -24,8 +25,5 @@</span>
+         }
+ 
+<span class="del">-        IO.println("");</span>
+<span class="del">-        IO.println("=== Fin de l'exploration ===");</span>
+<span class="del">-        IO.println("Monstres vaincus : " + aria.getVictories() + " / " + monsters.size());</span>
+<span class="del">-        IO.println("Or récolté : " + aria.getGold() + " po");</span>
+<span class="add">+        log.explorationEnded(aria.getVictories(), monsters.size(), aria.getGold());</span>
+     }
+ }</code></pre>
+<p><strong>Vérification</strong></p>
+<p>Sortie identique à l'énoncé (diff vide). <code>IO.println</code> reste dans ConsoleBattleLog.java, LootDrop.java et ShieldDrop.java.</p>
+<p><strong>À nommer</strong> : Responsabilité unique : l'affichage a sa propre classe. Dépendre d'une interface (<code>BattleLog</code>) plutôt que de la console.</p>
+<hr>
+<h3 id="ensuite-1">Étape 5 : Annoncer le butin sans que le Drop parle : AnnouncedLooter</h3>
+<p><strong>Question à poser</strong> : « Les <code>Drop</code> affichent encore leur message. Qui doit prévenir le log qu'un butin est ramassé ? Le <code>Drop</code> ? Aria ? » Les deux mélangeraient deux métiers.</p>
+<p><strong>Ce qu'il faut retenir</strong></p>
+<ul><li>un <code>Drop</code> ne fait plus qu'une chose : donner au <code>Looter</code>. Il n'affiche plus rien, et n'a donc plus besoin de la source ;</li><li><code>AnnouncedLooter</code> <strong>est</strong> un <code>Looter</code> qui enveloppe le vrai (Aria) : il lui transmet <code>collect</code> / <code>equip</code>, <strong>puis</strong> prévient le log ;</li><li>le <code>Drop</code> ne voit pas la différence : pour lui, c'est un <code>Looter</code> comme un autre ;</li><li>l'annonce est écrite une seule fois : tout futur <code>Drop</code> sera annoncé automatiquement, puisqu'il passe forcément par <code>collect</code> ou <code>equip</code> ;</li><li><code>Fight</code> choisit d'annoncer : <code>giveTo(new AnnouncedLooter(looter, log, source))</code>. Passer <code>looter</code> tout seul donnerait un pillage silencieux.</li></ul>
+<p><strong>Nouveau</strong> <code>AnnouncedLooter.java</code></p>
+<pre class="java"><code>public class AnnouncedLooter implements Looter {
+    private Looter looter;
+    private BattleLog log;
+    private Lootable source;
+
+    public AnnouncedLooter(Looter looter, BattleLog log, Lootable source) {
+        this.looter = looter;
+        this.log = log;
+        this.source = source;
+    }
+
+    public String getName() {
+        return this.looter.getName();
+    }
+
+    public void collect(Loot loot) {
+        this.looter.collect(loot);
+        this.log.lootCollected(loot);
+    }
+
+    public void equip(Protection shield) {
+        this.looter.equip(shield);
+        this.log.shieldPickedUp(this.looter, this.source);
+    }
+}</code></pre>
+<p><strong>Modifié</strong> <code>BattleLog.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -14,4 +14,8 @@</span>
+     void heroFell(Hero hero);
+ 
+<span class="add">+    void lootCollected(Loot loot);</span>
+<span class="add">+</span>
+<span class="add">+    void shieldPickedUp(Looter looter, Lootable source);</span>
+<span class="add">+</span>
+     void chestReached(Chest chest);
+ </code></pre>
+<p><strong>Modifié</strong> <code>ConsoleBattleLog.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -30,4 +30,12 @@</span>
+     }
+ 
+<span class="add">+    public void lootCollected(Loot loot) {</span>
+<span class="add">+        IO.println("Butin : " + loot);</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    public void shieldPickedUp(Looter looter, Lootable source) {</span>
+<span class="add">+        IO.println(looter.getName() + " ramasse le bouclier de " + source.getName() + ".");</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+     public void chestReached(Chest chest) {
+         IO.println("");</code></pre>
+<p><strong>Modifié</strong> <code>Drop.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,3 +1,3 @@</span>
+ public interface Drop {
+<span class="del">-    void giveTo(Looter looter, Lootable source);</span>
+<span class="add">+    void giveTo(Looter looter);</span>
+ }</code></pre>
+<p><strong>Modifié</strong> <code>Fight.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -44,5 +44,5 @@</span>
+ 
+     private void loot(Looter looter, Lootable source) {
+<span class="del">-        source.getDrop().giveTo(looter, source);</span>
+<span class="add">+        source.getDrop().giveTo(new AnnouncedLooter(looter, this.log, source));</span>
+     }
+ }</code></pre>
+<p><strong>Modifié</strong> <code>LootDrop.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -10,7 +10,6 @@</span>
+     }
+ 
+<span class="del">-    public void giveTo(Looter looter, Lootable source) {</span>
+<span class="add">+    public void giveTo(Looter looter) {</span>
+         looter.collect(this.loot);
+<span class="del">-        IO.println("Butin : " + this.loot);</span>
+     }
+ }</code></pre>
+<p><strong>Modifié</strong> <code>NoDrop.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -1,4 +1,4 @@</span>
+ public class NoDrop implements Drop {
+<span class="del">-    public void giveTo(Looter looter, Lootable source) {</span>
+<span class="add">+    public void giveTo(Looter looter) {</span>
+     }
+ }</code></pre>
+<p><strong>Modifié</strong> <code>ShieldDrop.java</code></p>
+<pre class="diff"><code><span class="hunk">@@ -10,7 +10,6 @@</span>
+     }
+ 
+<span class="del">-    public void giveTo(Looter looter, Lootable source) {</span>
+<span class="add">+    public void giveTo(Looter looter) {</span>
+         looter.equip(this.shield);
+<span class="del">-        IO.println(looter.getName() + " ramasse le bouclier de " + source.getName() + ".");</span>
+     }
+ }</code></pre>
+<p><strong>Vérification</strong></p>
+<p>Sortie identique à l'énoncé (diff vide). <code>IO.println</code> n'apparaît plus que dans ConsoleBattleLog.java.</p>
+<p><strong>À nommer</strong> : Décorateur : un objet qui en enveloppe un autre, avec la même interface, pour lui ajouter un comportement.</p></section></main>
+</div>
+</body>
+</html>
